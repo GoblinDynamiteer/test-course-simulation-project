@@ -14,8 +14,6 @@
 #define PIN_ONBOARD_LED 13
 #define BUTTON_PRESSED 0
 
-#include <Button.h>
-
 void setup(void)
 {
     pinMode(PIN_BTN_LED_ON, INPUT_PULLUP);
