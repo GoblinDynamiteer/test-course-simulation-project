@@ -8,22 +8,21 @@ Johan Kampe
 Reaction game refactored.
 */
 
-#include <Button.h>
 #include <U8glib.h>
 
-//Constants
-#define pinLEDRed 9
-#define pinLEDGreen 10
-#define pinLEDBlue 11
-#define ledBrightness 100
+enum{ RED, GREEN, BLUE, MAX_COLORS };
+enum{ BTN_PL1_RED, BTN_PL1_GREEN, BTN_PL1_BLUE,
+      BTN_PL2_RED, BTN_PL2_GREEN, BTN_PL2_BLUE,
+      MAX_BTN
+   };
 
-//Button objects for player buttons
-Button player1Blue(2);
-Button player1Green(3);
-Button player1Red(4);
-Button player2Blue(5);
-Button player2Green(6);
-Button player2Red(7);
+enum{ PLAYER_1, PLAYER_2 };
+
+const int rgb_led_pins[] = { 9, 10, 11 };
+const int btn_pins[] = { 2, 3, 4, 5, 6, 7 };
+
+//Constants
+#define ledBrightness 100
 
 bool player1set = 0;
 bool player2set = 0;
@@ -53,29 +52,29 @@ void changeLetterP1(bool upDown);
 void changeLetterP2(bool upDown);
 byte ledRandom(void);
 void countDown(byte n);
-byte getWinner(byte pin);
+int game_get_winner(int led_color);
 
 void setup()
 {
     randomSeed(analogRead(0));
 
-    player1Blue.begin();
-    player1Green.begin();
-    player1Red.begin();
-    player2Blue.begin();
-    player2Green.begin();
-    player2Red.begin();
+    for(int i = 0; i < MAX_BTN; i++)
+    {
+        if(i < MAX_COLORS)
+        {
+            pinMode(rgb_led_pins[i], OUTPUT);
+        }
 
-    pinMode(pinLEDRed, OUTPUT);
-    pinMode(pinLEDGreen, OUTPUT);
-    pinMode(pinLEDBlue, OUTPUT);
+        pinMode(btn_pins[i], INPUT_PULLUP);
+    }
 
     ledOff();
 }
 
 void loop()
 {
-    if(!player1set){
+    if(!player1set)
+    {
         setName();
     }
 
@@ -89,12 +88,15 @@ void loop()
 
     while(1)
     {
-        if(player1Green.pressed() || player2Green.pressed())
-        break;
+        if(button_get_status(BTN_PL2_GREEN) ||
+           button_get_status(BTN_PL2_GREEN))
+        {
+           break;
+        }
     }
 
     countDown(3);
-    int winner = getWinner(ledRandom());
+    int winner = game_get_winner(ledRandom());
 
     display.firstPage();
 
@@ -105,74 +107,40 @@ void loop()
     delay(1000);
 }
 
-byte getWinner(byte pin)
+int button_get_status(int button)
 {
-    byte winner = 0,  inputP1 = 0, inputP2 = 0;
+    return !digitalRead(btn_pins[button]);
+}
+
+int game_get_winner(int led_color)
+{
+    int button_pressed_first, player_pressed;
+
     while(1)
     {
-        if(player1Red.pressed())
+        for(int i = 0; i < MAX_BTN; i++)
         {
-            inputP1 = pinLEDRed;
-            break;
-        }
-
-        if(player1Blue.pressed())
-        {
-            inputP1 = pinLEDBlue;
-            break;
-        }
-
-        if(player1Green.pressed())
-        {
-            inputP1 = pinLEDGreen;
-            break;
-        }
-
-        if(player2Red.pressed())
-        {
-            inputP2 = pinLEDRed;
-            break;
-        }
-
-        if(player2Blue.pressed())
-        {
-            inputP2 = pinLEDBlue;
-            break;
-        }
-
-        if(player2Green.pressed())
-        {
-            inputP2 = pinLEDGreen;
-            break;
+            if(button_get_status(i))
+            {
+                button_pressed_first = i;
+                break;
+            }
         }
     }
-    //If a player has pressed a button that is same as LED color
-    if(inputP1 == pin)
+
+    if(button_pressed_first > BTN_PL1_BLUE)
     {
-        winner = 1;
-        scorePlayer1++;
+        player_pressed = PLAYER_2;
+        button_pressed_first -= 3;
     }
 
-    else if(inputP2 == pin)
+    else
     {
-        winner = 2;
-        scorePlayer2++;
-    }
-    //If a player has pressed a button that is not same as LED color
-    //score goes to other player
-    else if((inputP1 != 0) && (inputP1 != pin))
-    {
-        winner = 2;
-        scorePlayer2++;
+        player_pressed = PLAYER_1;
     }
 
-    else if((inputP2 != 0) && (inputP2 != pin))
-    {
-        winner = 1;
-        scorePlayer1++;
-    }
-
-    return winner;
+    return (button_pressed_first == led_color ?
+        player_pressed : !player_pressed);
 }
 
 void countDown(byte n)
@@ -192,9 +160,9 @@ void countDown(byte n)
 //Turns off LED
 void ledOff(void)
 {
-    analogWrite(pinLEDBlue, 0);
-    analogWrite(pinLEDRed, 0);
-    analogWrite(pinLEDGreen, 0);
+    analogWrite(rgb_led_pins[BLUE], 0);
+    analogWrite(rgb_led_pins[RED], 0);
+    analogWrite(rgb_led_pins[GREEN], 0);
 }
 
 //Turns on LED
@@ -221,7 +189,7 @@ void ledBlink(byte PinNo)
 
 byte ledRandom(void)
 {
-    int randomPin = random(pinLEDRed, pinLEDBlue + 1);
+    int randomPin = random(rgb_led_pins[RED], rgb_led_pins[BLUE] + 1);
     ledOn(randomPin);
     return randomPin;
 }
@@ -297,34 +265,34 @@ void setName(void)
             drawDisplay(2,0);
         }while(display.nextPage());
 
-        if(player1Red.pressed())
+        if(button_get_status(BTN_PL1_RED))
         {
             changeLetterP1(1);
         }
 
-        if(player2Red.pressed())
+        if(button_get_status(BTN_PL2_RED))
         {
             changeLetterP2(1);
         }
 
-        if(player1Blue.pressed())
+        if(button_get_status(BTN_PL1_BLUE))
         {
             changeLetterP1(0);
         }
 
-        if(player2Blue.pressed())
+        if(button_get_status(BTN_PL2_BLUE))
         {
             changeLetterP2(0);
         }
 
-        if(player1Green.pressed())
+        if(button_get_status(BTN_PL1_GREEN))
         {
             if(letter1set)
             player1set = 1;
             letter1set = 1;
         }
 
-        if(player2Green.pressed())
+        if(button_get_status(BTN_PL2_GREEN))
         {
             if(letter3set)
             player2set = 1;
@@ -333,7 +301,7 @@ void setName(void)
 
         if(player2set && player1set)
         {
-            ledBlink(pinLEDGreen);
+            ledBlink(rgb_led_pins[GREEN]);
             return; //exits function -- no need to break while-loop
         }
     }
