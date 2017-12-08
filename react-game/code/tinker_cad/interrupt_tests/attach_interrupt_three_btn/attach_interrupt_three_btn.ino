@@ -10,9 +10,10 @@ bool button_pressed;
 
 void setup()
 {
-    for(int i = 0; i < 3; i++)
+    for(int i = 0; i < BTN_MAX; i++)
     {
         pinMode(rgb_led_pin[i], OUTPUT);
+        pinMode(rgb_btn_pin[i], INPUT_PULLUP);
     }
 
     pinMode(INT_PIN, INPUT_PULLUP);
@@ -38,6 +39,7 @@ void loop()
 
 void isr_button_click(void)
 {
+    Serial.println("Int!");
     button_pressed = true;
 }
 
@@ -45,8 +47,9 @@ int get_pressed_button(void)
 {
     for(int i = 0; i < BTN_MAX; i++)
     {
-        if(digitalRead(rgb_led_pin[i]) == BUTTON_STATUS_DOWN)
+        if(digitalRead(rgb_btn_pin[i]) == BUTTON_STATUS_DOWN)
         {
+            Serial.println("Btn press: " + String(i));
             return i;
         }
     }
