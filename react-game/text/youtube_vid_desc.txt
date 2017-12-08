@@ -1,0 +1,15 @@
+Project for school course "Test, verifiering och certifiering".
+MÖLK Utbildning.
+
+https://github.com/GoblinDynamiteer/test-course-simulation-project
+
+
+
+
+--- VIDS -----
+
+TinkerCad LCD Test
+https://youtu.be/g8J78O9m7_M
+
+TinkerCad Button Test
+https://youtu.be/liGEypqYlbg
