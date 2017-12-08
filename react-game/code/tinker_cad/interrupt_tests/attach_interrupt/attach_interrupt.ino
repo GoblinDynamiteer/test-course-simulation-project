@@ -25,7 +25,7 @@ void setup()
 
 void loop()
 {
-    int color = RED;
+    static int color = RED;
 
     if(button_pressed)
     {
