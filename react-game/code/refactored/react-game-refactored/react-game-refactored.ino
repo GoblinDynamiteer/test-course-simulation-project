@@ -30,9 +30,6 @@ enum
     LCD_D7 = A5
 };
 
-LiquidCrystal lcd(
-    LCD_RS, LCD_EN, LCD_D4, LCD_D5, LCD_D6, LCD_D7);
-
 enum
 {
     GAME_MODE_SET_NAMES,
@@ -41,22 +38,34 @@ enum
     GAME_MODE_PLAY
 };
 
-const int rgb_led_pins[] = { 9, 10, 11 };
-const int btn_pins[] = { 2, 3, 4, 5, 6, 7 };
+#define INT_PIN 3
+
+const int rgb_led_pins[] = { 11, 12, 13 };
+const int btn_pins[] = { 5, 6, 7, 8, 9, 10 };
+bool button_pressed;
 
 bool (*game_mode[4])(void);
 
+LiquidCrystal lcd(
+    LCD_RS, LCD_EN, LCD_D4, LCD_D5, LCD_D6, LCD_D7);
+
 Player player[2];
 
-void rgb_led_off(void);
+/* Function prototypes */
 bool game_mode_set_names(void);
 bool game_mode_idle(void);
 bool game_mode_countdown(void);
 bool game_mode_play(void);
+void rgb_led_off(void);
+void isr_button_click(void);
 
 void setup()
 {
     randomSeed(analogRead(0));
+
+    pinMode(INT_PIN, INPUT_PULLUP);
+    attachInterrupt(
+        digitalPinToInterrupt(INT_PIN), isr_button_click, FALLING);
 
     game_mode[GAME_MODE_SET_NAMES] =    game_mode_set_names;
     game_mode[GAME_MODE_IDLE] =         game_mode_idle;
@@ -75,6 +84,9 @@ void setup()
 
     lcd.begin(16, 2);
     rgb_led_off();
+    button_pressed = false;
+
+    game_mode[GAME_MODE_SET_NAMES];
 }
 
 void loop()
@@ -84,6 +96,10 @@ void loop()
     delay(1000);
 }
 
+void isr_button_click(void)
+{
+    button_pressed = true;
+}
 
 bool game_mode_set_names(void)
 {

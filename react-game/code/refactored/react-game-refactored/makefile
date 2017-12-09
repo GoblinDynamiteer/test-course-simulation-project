@@ -11,7 +11,7 @@ OBJ_EXT = o
 MAIN = react-game-refactored.ino
 
 COMMAND_DELETE = -rm -f
-CC_FLAGS = -g -Os -w -std=gnu++11 -fpermissive -fno-exceptions
+CC_FLAGS = -c -g -Os -w -std=gnu++11 -fpermissive -fno-exceptions
 CC_FLAGS += -ffunction-sections -fdata-sections -fno-threadsafe-statics
 CC_FLAGS += -flto -w -x c++ -CC -mmcu=atmega328p -DF_CPU=16000000L
 CC_FLAGS += -DARDUINO=10805 -DARDUINO_AVR_UNO -DARDUINO_ARCH_AVR
@@ -27,4 +27,4 @@ CC_INCLUDE += -I"$(ARDUINO_LIB)/LiquidCrystal/src"
 all: main
 
 main:
-	"$(CC)" $(CC_FLAGS) $(CC_INCLUDE) $(MAIN) ./Player/Player.cpp -o testing
+	"$(CC)" $(CC_FLAGS) $(CC_INCLUDE) $(MAIN) ./Player/Player.cpp
