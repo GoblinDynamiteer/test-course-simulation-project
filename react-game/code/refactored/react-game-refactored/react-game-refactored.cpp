@@ -29,25 +29,20 @@ enum
     LCD_D7 = A5
 };
 
-enum
-{
-    GAME_MODE_SET_NAMES,
-    GAME_MODE_IDLE,
-    GAME_MODE_COUNTDOWN,
-    GAME_MODE_PLAY,
-    GAME_MODE_TEST
-};
+#define INT_PIN             3
+#define NO_BUTTON_PRESSED   -1
+#define UP                  true
+#define DOWN                false
+#define LCD_COLS            16
+#define LCD_ROWS            2
+#define COUNTDOWN_NUMBER    3
+#define BTN_TO_COLOR(b)     (b >= MAX_COLORS ? b - 3 : b)
+#define BTN_TO_PLAYER(b)    (b > 2 ? PLAYER_2 : PLAYER_1 )
+#define INC_ONE_MAX(v, m)   (v + 1 > m ? m : v + 1)
+#define LCD_MIDDLE(s_len)   (LCD_COLS / 2 - s_len / 2)
 
-#define INT_PIN 3
-#define NO_BUTTON_PRESSED -1
-#define BTN_TO_COLOR(b) (b >= MAX_COLORS ? b - 3 : b)
-#define BTN_TO_PLAYER(b) (b > 2 ? PLAYER_2 : PLAYER_1 )
-#define INC_ONE_MAX(v, m) (v + 1 > m ? m : v + 1)
-#define UP true
-#define DOWN false
-
-const int rgb_led_pins[] = { 11, 13, 12 };
-const int btn_pins[] = { 5, 6, 7, 8, 9, 10 };
+const int rgb_led_pins[] =  { 11, 13, 12 };
+const int btn_pins[] =      { 5, 6, 7, 8, 9, 10 };
 bool button_pressed;
 int last_button_pressed;
 
@@ -60,15 +55,15 @@ LiquidCrystal lcd(
 /* Function prototypes */
 void game_mode_set_names(void);
 bool game_mode_idle(void);
-bool game_mode_countdown(void);
-bool game_mode_play(void);
-bool game_mode_test(void);
+void game_mode_countdown(void);
+int game_mode_play(void);
 void rgb_led_off(void);
 void rgb_led_set_color(int);
 void isr_button_click(void);
 void lcd_print_string(String, int, int, bool);
 int button_get_which_pressed(void);
 void player_name_cycle_char(int, bool, int);
+int rgb_get_random_color(void);
 
 /**
  * Program setup
@@ -96,11 +91,10 @@ void setup()
     player_score[PLAYER_1] = 0;
     player_score[PLAYER_2] = 0;
 
-    lcd.begin(16, 2);
+    lcd.begin(LCD_COLS, LCD_ROWS);
     rgb_led_off();
     button_pressed = false;
 
-    Serial.begin(9600);
     game_mode_set_names();
 }
 
@@ -113,8 +107,16 @@ void loop()
 
     game_mode_countdown();
 
-    game_mode_test();
-    delay(1);
+    int winner = game_mode_play();
+
+    lcd_print_string("WINNER: ", 0, 0, true);
+    lcd_print_string(player_name[winner] + "!", 0, 1, false);
+
+    player_score[winner]++;
+
+    delay(2000);
+    rgb_led_off();
+    button_pressed = false;
 }
 
 /**
@@ -209,15 +211,55 @@ bool game_mode_idle(void)
     return false;
 }
 
-
-bool game_mode_countdown(void)
+/**
+ * Display message and countdown from COUNTDOWN_NUMBER on LCD
+ */
+void game_mode_countdown(void)
 {
-    return false;
+    static const String message = "GET READY!";
+    int count = COUNTDOWN_NUMBER;
+
+    lcd_print_string(message, LCD_MIDDLE(message.length()), 0, true);
+    delay(1000);
+
+    while(count)
+    {
+        lcd_print_string(String(count--), LCD_COLS/2, 1, false);
+        delay(1000);
+    }
+
+    button_pressed = false;
 }
 
-bool game_mode_play(void)
+/**
+ * Waits for any player to press a button, then determines winner by checking
+ *      if pressed button color matches the RGB-LED color.
+ * @return  Winner, PLAYER_1 or PLAYER_2
+ */
+int game_mode_play(void)
 {
-    return false;
+    static const String color_name[MAX_COLORS] =
+    {
+        "RED", "GREEN", "BLUE"
+    };
+
+    int c = rgb_get_random_color();
+    int winner;
+
+    rgb_led_set_color(c);
+
+    lcd_print_string(
+        color_name[c] + "!", LCD_MIDDLE(color_name[c].length()), 0, true);
+    lcd_print_string(
+        color_name[c] + "!", LCD_MIDDLE(color_name[c].length()), 1, false);
+
+    while(!button_pressed);
+
+    int player_to_press_first = BTN_TO_PLAYER(last_button_pressed);
+    int button_color_pressed =  BTN_TO_COLOR(last_button_pressed);
+
+    return (button_color_pressed == c ?
+        player_to_press_first : !player_to_press_first);
 }
 
 /**
@@ -294,7 +336,7 @@ void rgb_led_set_color(int c)
  * Get a random color, RED, GREEN or BLUE
  * @return  Color
  */
-int get_random_color(void)
+int rgb_get_random_color(void)
 {
     return random(RED, MAX_COLORS);
 }
