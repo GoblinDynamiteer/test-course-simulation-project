@@ -1,0 +1,10 @@
+Push Button 1 wired to pin 5 with values U, M
+Push Button 2 wired to pin 6 with values U, M
+Push Button 3 wired to pin 7 with values U, M
+Push Button 4 wired to pin 8 with values U, M
+Push Button 5 wired to pin 9 with values U, M
+Push Button 6 wired to pin 10 with values U, M
+Coloured LED 1 wired to pin 11 with values D, R
+Coloured LED 2 wired to pin 12 with values D, R
+Coloured LED 3 wired to pin 13 with values D, R
+USB Serial 1 wired to pins 1 , 0 with value 9600
