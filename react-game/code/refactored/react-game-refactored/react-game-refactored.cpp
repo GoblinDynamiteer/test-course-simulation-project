@@ -11,14 +11,18 @@
 #include <Arduino.h>
 #include <LiquidCrystal.h>
 
+/* Color IDs */
 enum{ RED, GREEN, BLUE, MAX_COLORS };
+
+/* Button IDs */
 enum{ BTN_PL1_RED, BTN_PL1_GREEN, BTN_PL1_BLUE,
       BTN_PL2_RED, BTN_PL2_GREEN, BTN_PL2_BLUE,
-      MAX_BTN
-   };
+      MAX_BUTTONS };
 
+/* Player IDs */
 enum{ PLAYER_1, PLAYER_2, MAX_PLAYERS };
 
+/* Pins for LCD hookup */
 enum
 {
     LCD_RS = A0,
@@ -29,26 +33,36 @@ enum
     LCD_D7 = A5
 };
 
-#define INT_PIN             3
-#define NO_BUTTON_PRESSED   -1
-#define UP                  true
-#define DOWN                false
-#define LCD_COLS            16
-#define LCD_ROWS            2
-#define COUNTDOWN_NUMBER    3
+#define INT_PIN             3           // Iterrupt pin
+#define NO_BUTTON_PRESSED   -1          // Used when checking all buttons
+#define UP                  true        // For cycling player name letters
+#define DOWN                false       // For cycling player name letters
+#define LCD_COLS            16          // LCD column size
+#define LCD_ROWS            2           // LCD row size
+#define COUNTDOWN_NUMBER    3           // Countdown for game
+
+/* Determine button color */
 #define BTN_TO_COLOR(b)     (b >= MAX_COLORS ? b - 3 : b)
+/* Determine which player the button belongs to */
 #define BTN_TO_PLAYER(b)    (b > 2 ? PLAYER_2 : PLAYER_1 )
+/* Increase value (v) by 1, stop at max (m) */
 #define INC_ONE_MAX(v, m)   (v + 1 > m ? m : v + 1)
+/* Calculate value for placing a string with lenght s_len on LCD middle */
 #define LCD_MIDDLE(s_len)   (LCD_COLS / 2 - s_len / 2)
 
+/* Pins */
 const int rgb_led_pins[] =  { 11, 13, 12 };
 const int btn_pins[] =      { 5, 6, 7, 8, 9, 10 };
+
+/* Button variables */
 bool button_pressed;
 int last_button_pressed;
 
+/* Player variables */
 int player_score[MAX_PLAYERS];
 String player_name[MAX_PLAYERS];
 
+/* LCD Object */
 LiquidCrystal lcd(
     LCD_RS, LCD_EN, LCD_D4, LCD_D5, LCD_D6, LCD_D7);
 
@@ -56,14 +70,14 @@ LiquidCrystal lcd(
 void game_mode_set_names(void);
 bool game_mode_idle(void);
 void game_mode_countdown(void);
-int game_mode_play(void);
+int  game_mode_play(void);
 void rgb_led_off(void);
 void rgb_led_set_color(int);
+int  rgb_get_random_color(void);
 void isr_button_click(void);
 void lcd_print_string(String, int, int, bool);
-int button_get_which_pressed(void);
+int  button_get_which_pressed(void);
 void player_name_cycle_char(int, bool, int);
-int rgb_get_random_color(void);
 
 /**
  * Program setup
@@ -72,11 +86,10 @@ void setup()
 {
     randomSeed(analogRead(0));
 
+    /* Set pin modes for interrupt pin, buttons and rgb-led */
     pinMode(INT_PIN, INPUT_PULLUP);
-    attachInterrupt(
-        digitalPinToInterrupt(INT_PIN), isr_button_click, FALLING);
 
-    for(int i = 0; i < MAX_BTN; i++)
+    for(int i = 0; i < MAX_BUTTONS; i++)
     {
         if(i < MAX_COLORS)
         {
@@ -86,15 +99,22 @@ void setup()
         pinMode(btn_pins[i], INPUT_PULLUP);
     }
 
+    /* Set ISR for buttons */
+    attachInterrupt(
+        digitalPinToInterrupt(INT_PIN), isr_button_click, FALLING);
+
+    /* Players init */
     player_name[PLAYER_1].reserve(2);
     player_name[PLAYER_2].reserve(2);
     player_score[PLAYER_1] = 0;
     player_score[PLAYER_2] = 0;
 
     lcd.begin(LCD_COLS, LCD_ROWS);
+
     rgb_led_off();
     button_pressed = false;
 
+    /* Game starts by setting player names (once) */
     game_mode_set_names();
 }
 
@@ -103,7 +123,7 @@ void setup()
  */
 void loop()
 {
-    while(!game_mode_idle());
+    while(!game_mode_idle()); // Until any button press
 
     game_mode_countdown();
 
@@ -126,10 +146,10 @@ void isr_button_click(void)
 {
     if(!button_pressed)
     {
+        /* Determine what button was pressed */
         last_button_pressed = button_get_which_pressed();
         button_pressed = true;
     }
-
 }
 
 /**
@@ -191,9 +211,10 @@ void game_mode_set_names(void)
 bool game_mode_idle(void)
 {
     static bool dots = false;
+
     lcd_print_string(
         player_name[PLAYER_1] + ": " + player_score[PLAYER_1] + " | " +
-        player_name[PLAYER_2] + ": " + player_score[PLAYER_2], 0, 0, true);
+        player_name[PLAYER_2] + ": " + player_score[PLAYER_2], 1, 0, true);
 
     lcd_print_string(dots ? "*PRESS ANY KEY!*" : " PRESS ANY KEY! ",
         0, 1, false);
@@ -301,7 +322,7 @@ int button_get_status(int button)
  */
 int button_get_which_pressed(void)
 {
-    for(int i = 0; i < MAX_BTN; i++)
+    for(int i = 0; i < MAX_BUTTONS; i++)
     {
         if(button_get_status(i))
         {
