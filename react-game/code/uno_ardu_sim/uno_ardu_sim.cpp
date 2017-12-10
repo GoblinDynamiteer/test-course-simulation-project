@@ -5,7 +5,9 @@
     2017-12-10
 
     Two player reaction game
-    Code for TinkerCad Simulation
+    Code for UnoArduSim Simulation
+
+    Modified from TinkerCad simulation code
 */
 
 /* Color IDs */
@@ -24,6 +26,7 @@ enum{ PLAYER_1, PLAYER_2, MAX_PLAYERS };
 #define UP                  true        // For cycling player name letters
 #define DOWN                false       // For cycling player name letters
 
+/* Rewrite function like macros to functions: */
 /* Determine button color */
 int BTN_TO_COLOR(int b)
 {
@@ -172,21 +175,22 @@ void game_mode_set_names(void)
  */
 bool game_mode_idle(void)
 {
+    lcd_print_string(" PRESS ANY KEY! ", 0, 1, false);
     lcd_print_string(player_name[PLAYER_1], 1, 0, true);
     lcd_print_string(String(player_score[PLAYER_1]), 1, 0, true);
     lcd_print_string(player_name[PLAYER_2], 1, 0, true);
     lcd_print_string(String(player_score[PLAYER_2]), 1, 0, true);
-    lcd_print_string(" PRESS ANY KEY! ", 0, 1, false);
 
-    isr_button_click();
+    while(!button_pressed)
+    {
+        isr_button_click();
+    }
 
     if(button_pressed)
     {
         button_pressed = false;
         return true;
     }
-
-    delay(500);
 
     return false;
 }
@@ -238,15 +242,6 @@ int game_mode_play(void)
 
     int player_to_press_first = BTN_TO_PLAYER(last_button_pressed);
     int button_color_pressed =  BTN_TO_COLOR(last_button_pressed);
-
-    Serial.print("Color: ");
-    Serial.println(c);
-
-    Serial.print("Button: ");
-    Serial.println(button_color_pressed);
-
-    Serial.print("Player: ");
-    Serial.println(player_to_press_first);
 
     if(button_color_pressed == c)
     {
