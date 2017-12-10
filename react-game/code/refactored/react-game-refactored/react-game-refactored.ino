@@ -3,14 +3,13 @@ TinkerCad
 
 Mjukvaruutveckare Inbyggda System
 Johan Kampe
-2017-12-09
+2017-12-10
 
 Reaction game refactored.
 */
 
 #include <Arduino.h>
 #include <LiquidCrystal.h>
-//#include <Player.h>
 
 enum{ RED, GREEN, BLUE, MAX_COLORS };
 enum{ BTN_PL1_RED, BTN_PL1_GREEN, BTN_PL1_BLUE,
@@ -18,7 +17,7 @@ enum{ BTN_PL1_RED, BTN_PL1_GREEN, BTN_PL1_BLUE,
       MAX_BTN
    };
 
-enum{ PLAYER_1, PLAYER_2 };
+enum{ PLAYER_1, PLAYER_2, MAX_PLAYERS };
 
 enum
 {
@@ -49,11 +48,11 @@ bool button_pressed;
 int last_button_pressed;
 
 bool (*game_mode[5])(void);
+int player_score[MAX_PLAYERS];
+String player_name[MAX_PLAYERS];
 
 LiquidCrystal lcd(
     LCD_RS, LCD_EN, LCD_D4, LCD_D5, LCD_D6, LCD_D7);
-
-//Player player[2];
 
 /* Function prototypes */
 bool game_mode_set_names(void);
