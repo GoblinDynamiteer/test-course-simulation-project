@@ -1,11 +1,11 @@
-/*  Project simulation
-TinkerCad
+/*  PROJECT: SIMULATION REACT-GAME
 
-Mjukvaruutveckare Inbyggda System
-Johan Kampe
-2017-12-10
+    Mjukvaruutveckare Inbyggda System
+    Johan Kampe
+    2017-12-10
 
-Reaction game refactored.
+    Two player reaction game
+    Code for TinkerCad Simulation
 */
 
 #include <Arduino.h>
@@ -70,6 +70,9 @@ void lcd_print_string(String, int, int, bool);
 int button_get_which_pressed(void);
 void player_name_cycle_char(int, bool, int);
 
+/**
+ * Program setup
+ */
 void setup()
 {
     randomSeed(analogRead(0));
@@ -101,6 +104,9 @@ void setup()
     game_mode_set_names();
 }
 
+/**
+ * Program main loop
+ */
 void loop()
 {
     while(!game_mode_idle());
@@ -111,32 +117,9 @@ void loop()
     delay(1);
 }
 
-bool game_mode_test(void)
-{
-    const String button_names[] =
-    {
-        "P1 RED", "P1 GREEN", "P1 BLUE",
-        "P2 RED", "P2 GREEN", "P2 BLUE"
-    };
-
-    while(true)
-    {
-        if(button_pressed)
-        {
-            if(last_button_pressed != NO_BUTTON_PRESSED)
-            {
-                lcd_print_string(
-                    "Button down: " + String(last_button_pressed), 0, 0, true);
-                lcd_print_string(button_names[last_button_pressed], 0, 1, false);
-                rgb_led_set_color(BTN_TO_COLOR(last_button_pressed));
-            }
-
-            button_pressed = false;
-        }
-    }
-}
-
-/* ISR triggers on any button press */
+/**
+ * ISR, triggers on any button press
+ */
 void isr_button_click(void)
 {
     if(!button_pressed)
@@ -147,7 +130,14 @@ void isr_button_click(void)
 
 }
 
-/* Set player names (2 char initials).  */
+/**
+ * Set player names (2 letter initials)
+ *      Red button:     Prev letter (Eg CA -> BA)
+ *      Blue button:    Next letter (Eg AA -> BA)
+ *      Green button:   Confirm
+ *
+ * Mode ends when both players have set both their initials
+ */
 void game_mode_set_names(void)
 {
     player_name[PLAYER_1] = player_name[PLAYER_2] = "AA";
@@ -192,7 +182,10 @@ void game_mode_set_names(void)
     }
 }
 
-/* Idle mode, display score and wait for any button press */
+/**
+ * Idle mode, display score on LCD and wait for any button press
+ * @return  true : Any button pressed, false: No button pressed
+ */
 bool game_mode_idle(void)
 {
     static bool dots = false;
@@ -216,7 +209,7 @@ bool game_mode_idle(void)
     return false;
 }
 
-/* Countdown */
+
 bool game_mode_countdown(void)
 {
     return false;
@@ -227,7 +220,12 @@ bool game_mode_play(void)
     return false;
 }
 
-/* Cycle a players initial, A-Z */
+/**
+ * Cycle letter in player name (initials)
+ * @param player    PLAYER_1 or PLAYER_2
+ * @param direction UP or DOWN (UP: A->B, DOWN: C->B)
+ * @param index     Letter to change, 0 or 1
+ */
 void player_name_cycle_char(int player, bool direction, int index)
 {
     char c = player_name[player][index];
@@ -245,13 +243,20 @@ void player_name_cycle_char(int player, bool direction, int index)
     player_name[player][index] = c;
 }
 
-/* Get a buttons status */
+/**
+ * Get status of a button
+ * @param  button Button index, eg BTN_PL1_RED or BTN_PL2_BLUE
+ * @return        Button status: 1 (pressed) 0 (not pressed)
+ */
 int button_get_status(int button)
 {
     return !digitalRead(btn_pins[button]);
 }
 
-/* Gets first found pressed button */
+/**
+ * Gets first detected pressed button
+ * @return  Button index, eg BTN_PL1_RED or BTN_PL2_BLUE
+ */
 int button_get_which_pressed(void)
 {
     for(int i = 0; i < MAX_BTN; i++)
@@ -265,7 +270,9 @@ int button_get_which_pressed(void)
     return NO_BUTTON_PRESSED;
 }
 
-/* Set RGB-LED color off */
+/**
+ * Set RGB-LED color off
+ */
 void rgb_led_off(void)
 {
     analogWrite(rgb_led_pins[BLUE], 0);
@@ -273,14 +280,20 @@ void rgb_led_off(void)
     analogWrite(rgb_led_pins[GREEN], 0);
 }
 
-/* Set RGB-LED color */
+/**
+ * Set RGB-LED color
+ * @param c Color (RED, GREEN or BLUE)
+ */
 void rgb_led_set_color(int c)
 {
     rgb_led_off();
     analogWrite(rgb_led_pins[c], 255);
 }
 
-/* Get a random color, RED, GREEN or BLUE */
+/**
+ * Get a random color, RED, GREEN or BLUE
+ * @return  Color
+ */
 int get_random_color(void)
 {
     return random(RED, MAX_COLORS);
