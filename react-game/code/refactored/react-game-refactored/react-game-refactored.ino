@@ -58,7 +58,7 @@ LiquidCrystal lcd(
     LCD_RS, LCD_EN, LCD_D4, LCD_D5, LCD_D6, LCD_D7);
 
 /* Function prototypes */
-bool game_mode_set_names(void);
+void game_mode_set_names(void);
 bool game_mode_idle(void);
 bool game_mode_countdown(void);
 bool game_mode_play(void);
@@ -103,6 +103,10 @@ void setup()
 
 void loop()
 {
+    while(!game_mode_idle());
+
+    game_mode_countdown();
+
     game_mode_test();
     delay(1);
 }
@@ -115,19 +119,21 @@ bool game_mode_test(void)
         "P2 RED", "P2 GREEN", "P2 BLUE"
     };
 
-    if(button_pressed)
+    while(true)
     {
-        if(last_button_pressed != NO_BUTTON_PRESSED)
+        if(button_pressed)
         {
-            lcd_print_string(
-                "Button down: " + String(last_button_pressed), 0, 0, true);
-            lcd_print_string(button_names[last_button_pressed], 0, 1, false);
-            rgb_led_set_color(BTN_TO_COLOR(last_button_pressed));
+            if(last_button_pressed != NO_BUTTON_PRESSED)
+            {
+                lcd_print_string(
+                    "Button down: " + String(last_button_pressed), 0, 0, true);
+                lcd_print_string(button_names[last_button_pressed], 0, 1, false);
+                rgb_led_set_color(BTN_TO_COLOR(last_button_pressed));
+            }
+
+            button_pressed = false;
         }
-
-        button_pressed = false;
     }
-
 }
 
 /* ISR triggers on any button press */
@@ -141,7 +147,8 @@ void isr_button_click(void)
 
 }
 
-bool game_mode_set_names(void)
+/* Set player names (2 char initials).  */
+void game_mode_set_names(void)
 {
     player_name[PLAYER_1] = player_name[PLAYER_2] = "AA";
     int char_index[MAX_PLAYERS] = { 0, 0 };
@@ -183,15 +190,33 @@ bool game_mode_set_names(void)
             done = (char_index[PLAYER_1] == 2 && char_index[PLAYER_2] == 2);
         }
     }
-
-    return false;
 }
 
+/* Idle mode, display score and wait for any button press */
 bool game_mode_idle(void)
 {
+    static bool dots = false;
+    lcd_print_string(
+        player_name[PLAYER_1] + ": " + player_score[PLAYER_1] + " | " +
+        player_name[PLAYER_2] + ": " + player_score[PLAYER_2], 0, 0, true);
+
+    lcd_print_string(dots ? "*PRESS ANY KEY!*" : " PRESS ANY KEY! ",
+        0, 1, false);
+
+    dots = !dots;
+
+    if(button_pressed)
+    {
+        button_pressed = false;
+        return true;
+    }
+
+    delay(500);
+
     return false;
 }
 
+/* Countdown */
 bool game_mode_countdown(void)
 {
     return false;
@@ -202,6 +227,7 @@ bool game_mode_play(void)
     return false;
 }
 
+/* Cycle a players initial, A-Z */
 void player_name_cycle_char(int player, bool direction, int index)
 {
     char c = player_name[player][index];
@@ -219,11 +245,13 @@ void player_name_cycle_char(int player, bool direction, int index)
     player_name[player][index] = c;
 }
 
+/* Get a buttons status */
 int button_get_status(int button)
 {
     return !digitalRead(btn_pins[button]);
 }
 
+/* Gets first found pressed button */
 int button_get_which_pressed(void)
 {
     for(int i = 0; i < MAX_BTN; i++)
@@ -252,12 +280,13 @@ void rgb_led_set_color(int c)
     analogWrite(rgb_led_pins[c], 255);
 }
 
+/* Get a random color, RED, GREEN or BLUE */
 int get_random_color(void)
 {
     return random(RED, MAX_COLORS);
 }
 
-/* Print string to LCD */
+
 void lcd_print_string(String s, int col, int row, bool clear)
 {
     if(clear)
