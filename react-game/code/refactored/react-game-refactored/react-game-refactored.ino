@@ -41,13 +41,16 @@ enum
 #define INT_PIN 3
 #define NO_BUTTON_PRESSED -1
 #define BTN_TO_COLOR(b) (b >= MAX_COLORS ? b - 3 : b)
+#define BTN_TO_PLAYER(b) (b > 2 ? PLAYER_2 : PLAYER_1 )
+#define INC_ONE_MAX(v, m) (v + 1 > m ? m : v + 1)
+#define UP true
+#define DOWN false
 
 const int rgb_led_pins[] = { 11, 13, 12 };
 const int btn_pins[] = { 5, 6, 7, 8, 9, 10 };
 bool button_pressed;
 int last_button_pressed;
 
-bool (*game_mode[5])(void);
 int player_score[MAX_PLAYERS];
 String player_name[MAX_PLAYERS];
 
@@ -65,6 +68,7 @@ void rgb_led_set_color(int);
 void isr_button_click(void);
 void lcd_print_string(String, int, int, bool);
 int button_get_which_pressed(void);
+void player_name_cycle_char(int, bool, int);
 
 void setup()
 {
@@ -73,12 +77,6 @@ void setup()
     pinMode(INT_PIN, INPUT_PULLUP);
     attachInterrupt(
         digitalPinToInterrupt(INT_PIN), isr_button_click, FALLING);
-
-    game_mode[GAME_MODE_SET_NAMES] =    game_mode_set_names;
-    game_mode[GAME_MODE_IDLE] =         game_mode_idle;
-    game_mode[GAME_MODE_COUNTDOWN] =    game_mode_countdown;
-    game_mode[GAME_MODE_PLAY] =         game_mode_play;
-    game_mode[GAME_MODE_TEST] =         game_mode_test;
 
     for(int i = 0; i < MAX_BTN; i++)
     {
@@ -90,18 +88,22 @@ void setup()
         pinMode(btn_pins[i], INPUT_PULLUP);
     }
 
+    player_name[PLAYER_1].reserve(2);
+    player_name[PLAYER_2].reserve(2);
+    player_score[PLAYER_1] = 0;
+    player_score[PLAYER_2] = 0;
+
     lcd.begin(16, 2);
     rgb_led_off();
     button_pressed = false;
 
-    //game_mode[GAME_MODE_SET_NAMES];
+    Serial.begin(9600);
+    game_mode_set_names();
 }
 
 void loop()
 {
-    /* Run game mode with with pointer */
-    game_mode[GAME_MODE_TEST]();
-
+    game_mode_test();
     delay(1);
 }
 
@@ -141,6 +143,47 @@ void isr_button_click(void)
 
 bool game_mode_set_names(void)
 {
+    player_name[PLAYER_1] = player_name[PLAYER_2] = "AA";
+    int char_index[MAX_PLAYERS] = { 0, 0 };
+    bool done = false;
+
+    lcd_print_string("SET NAME P1: " + player_name[PLAYER_1], 0, 0, true);
+    lcd_print_string("SET NAME P2: " + player_name[PLAYER_2], 0, 1, false);
+
+    while(!done)
+    {
+        if(button_pressed)
+        {
+            int p = BTN_TO_PLAYER(last_button_pressed);
+
+            switch(BTN_TO_COLOR(last_button_pressed))
+            {
+                case RED:
+                    player_name_cycle_char(p, DOWN, char_index[p]);
+                    break;
+
+                case GREEN:
+                    char_index[p] = INC_ONE_MAX(char_index[p], 2);
+                    break;
+
+                case BLUE:
+                    player_name_cycle_char(p, UP, char_index[p]);
+                    break;
+
+                default:
+                    break;
+            }
+
+            lcd_print_string(
+                "SET NAME P1: " + player_name[PLAYER_1], 0, 0, true);
+            lcd_print_string(
+                "SET NAME P2: " + player_name[PLAYER_2], 0, 1, false);
+
+            button_pressed = false;
+            done = (char_index[PLAYER_1] == 2 && char_index[PLAYER_2] == 2);
+        }
+    }
+
     return false;
 }
 
@@ -157,6 +200,23 @@ bool game_mode_countdown(void)
 bool game_mode_play(void)
 {
     return false;
+}
+
+void player_name_cycle_char(int player, bool direction, int index)
+{
+    char c = player_name[player][index];
+
+    if(direction == UP)
+    {
+        c = c + 1 > 'Z' ? 'A' : c + 1;
+    }
+
+    else
+    {
+        c = c - 1 < 'A' ? 'Z' : c - 1;
+    }
+
+    player_name[player][index] = c;
 }
 
 int button_get_status(int button)
