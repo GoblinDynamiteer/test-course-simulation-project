@@ -286,7 +286,13 @@ int get_random_color(void)
     return random(RED, MAX_COLORS);
 }
 
-
+/**
+ * Print a string variable to LCD
+ * @param s     String to print
+ * @param col   Start column
+ * @param row   Start row
+ * @param clear Clear before print?
+ */
 void lcd_print_string(String s, int col, int row, bool clear)
 {
     if(clear)

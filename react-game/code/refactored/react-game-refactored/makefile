@@ -6,9 +6,9 @@ UNTIY_HOME = ../../unity
 UNITY_SRC = $(UNTIY_HOME)/src
 
 EXECUTABLE = refactor_calc
-SRC_EXT = ino
+SRC_EXT = cpp
 OBJ_EXT = o
-MAIN = react-game-refactored.ino
+MAIN = react-game-refactored.$(SRC_EXT)
 
 COMMAND_DELETE = -rm -f
 CC_FLAGS = -c -g -Os -w -std=gnu++11 -fpermissive -fno-exceptions
